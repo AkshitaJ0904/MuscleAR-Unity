@@ -7,14 +7,46 @@ namespace MuscleAR
     {
         static Texture2D fiber, woodTex, noiseTex;
 
-        static Shader Std { get { return Shader.Find("Standard"); } }
+        static Shader stdShader;
+        static Shader spriteShader;
+
+        static Shader Std
+        {
+            get
+            {
+                if (stdShader != null) return stdShader;
+                stdShader = Shader.Find("Standard");
+                if (stdShader == null)
+                {
+                    var resMat = Resources.Load<Material>("Materials/StandardPBR");
+                    if (resMat != null && resMat.shader != null) stdShader = resMat.shader;
+                }
+                if (stdShader == null) stdShader = Shader.Find("Mobile/Diffuse");
+                if (stdShader == null) stdShader = Shader.Find("Legacy Shaders/Diffuse");
+                if (stdShader == null) stdShader = Shader.Find("Sprites/Default");
+                return stdShader;
+            }
+        }
+
+        static Shader SpriteShader
+        {
+            get
+            {
+                if (spriteShader != null) return spriteShader;
+                spriteShader = Shader.Find("Sprites/Default");
+                if (spriteShader == null) spriteShader = Shader.Find("Unlit/Color");
+                if (spriteShader == null) spriteShader = Std;
+                return spriteShader;
+            }
+        }
 
         public static Material Make(Color c, float smooth = 0.4f, float metal = 0f, Texture tex = null)
         {
-            var m = new Material(Std);
+            var s = Std;
+            var m = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
             m.color = c;
-            m.SetFloat("_Glossiness", smooth);
-            m.SetFloat("_Metallic", metal);
+            if (m.HasProperty("_Glossiness")) m.SetFloat("_Glossiness", smooth);
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metal);
             if (tex != null) m.mainTexture = tex;
             return m;
         }
@@ -24,18 +56,23 @@ namespace MuscleAR
             var m = Make(Color.black, 0.2f, 0f, tex);
             m.EnableKeyword("_EMISSION");
             m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
-            m.SetColor("_EmissionColor", c * intensity);
-            if (tex != null) { m.SetTexture("_EmissionMap", tex); m.SetColor("_EmissionColor", Color.white * intensity); }
+            if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", c * intensity);
+            if (tex != null)
+            {
+                if (m.HasProperty("_EmissionMap")) m.SetTexture("_EmissionMap", tex);
+                if (m.HasProperty("_EmissionColor")) m.SetColor("_EmissionColor", Color.white * intensity);
+            }
             return m;
         }
 
         public static Material Unlit(Color c, Texture tex = null, bool additive = false)
         {
-            var m = new Material(Shader.Find("Sprites/Default"));
+            var s = SpriteShader;
+            var m = s != null ? new Material(s) : new Material(Shader.Find("Hidden/InternalErrorShader"));
             m.color = c;
             if (tex != null) m.mainTexture = tex;
             m.renderQueue = 3000;
-            if (additive)
+            if (additive && m.HasProperty("_BlendMode"))
             {
                 m.SetInt("_BlendMode", 1);
             }

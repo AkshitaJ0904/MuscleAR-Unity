@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -41,7 +42,7 @@ namespace MuscleAR
             base.Enter();
             f.lab.SetLook(LabEnvironment.Look.Lab);
             f.scanner.Stop();
-            f.model.ResetTransform(); SetupModel(ModelController.Mode.None, true, false); f.model.ShowDisc(true);
+            SetupModel(ModelController.Mode.None, true, false); f.model.ShowDisc(true);
             f.body.SetLayer(BodyLayer.Muscle);
             f.rig.Orbit(new Vector3(0, 0.9f, 0), 2.7f, 1.0f, 3.5f, 20f, 42f);
         }
@@ -74,7 +75,7 @@ namespace MuscleAR
         {
             base.Enter();
             f.lab.SetLook(LabEnvironment.Look.Lab);
-            f.model.ResetTransform(); SetupModel(ModelController.Mode.None, true, false); f.model.ShowDisc(false);
+            SetupModel(ModelController.Mode.None, true, false); f.model.ShowDisc(false);
             f.rig.Orbit(new Vector3(0, 0.88f, 0.1f), 2.3f, 0.95f, -2.5f, 8f, 40f);
         }
     }
@@ -85,7 +86,8 @@ namespace MuscleAR
     public class ChooseModeScreen : ScreenBase
     {
         class Opt { public Image bg, ring, check; public Text sub, title; }
-        readonly Opt[] opts = new Opt[3];
+        readonly Opt[] opts = new Opt[2];
+        Button startBtn;
 
         public ChooseModeScreen(AppFlow f) : base(f, 3, "CHOOSE MODE", "SETUP") { }
 
@@ -96,35 +98,34 @@ namespace MuscleAR
             glow.rectTransform.anchorMin = new Vector2(0, 0.45f); glow.rectTransform.anchorMax = new Vector2(1, 1); glow.rectTransform.offsetMin = glow.rectTransform.offsetMax = Vector2.zero;
             GhostHud();
 
-            TopRow("SETUP");
             Headline("How do you want\nto learn?", 31, -2);
 
-            string[] names = { "AR Explorer", "Learn", "Quiz" };
-            string[] subs = { "Place anatomy in your space", "Study muscles and structures", "Test your knowledge" };
-            Sprite[] icons = { UIKit.IARBox, UIKit.IList, UIKit.IDiamond };
-            for (int i = 0; i < 3; i++)
+            string[] names = { "AR Explorer", "Quiz" };
+            string[] subs = { "Place full-body anatomy in your real space", "Test your knowledge on 6 target muscles" };
+            Sprite[] icons = { UIKit.IARBox, UIKit.IDiamond };
+            for (int i = 0; i < 2; i++)
             {
                 int idx = i;
-                float y = 104f + (2 - i) * 78f;
+                float y = 130f + (1 - i) * 88f;
                 var o = new Opt();
                 o.bg = UIKit.Img(root, UIKit.Round, UIKit.CardFill, "Option" + i, true, true);
-                BC(o.bg.rectTransform, y, 342, 68);
+                BC(o.bg.rectTransform, y, 342, 74);
                 var b = o.bg.gameObject.AddComponent<Button>(); b.targetGraphic = o.bg; b.transition = UnityEngine.UI.Selectable.Transition.None;
                 o.bg.gameObject.AddComponent<PressScale>();
                 b.onClick.AddListener(() => Select(idx));
                 o.ring = UIKit.Img(o.bg.transform, UIKit.Ring, new Color(0.3f, 0.4f, 0.55f, 0.55f), "Border", true); UIKit.Fill(o.ring.rectTransform);
                 var ic = UIKit.Icon(o.bg.transform, icons[i], Color.white, 20, "Icon");
-                UIKit.At(ic.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(16, -22), new Vector2(20, 20));
+                UIKit.At(ic.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(16, -24), new Vector2(20, 20));
                 o.title = UIKit.Label(o.bg.transform, names[i], 19, FontStyle.Bold, Color.white, TextAnchor.MiddleLeft, "Title");
-                UIKit.At(o.title.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(44, -22), new Vector2(200, 26));
-                o.sub = UIKit.Label(o.bg.transform, subs[i], 14, FontStyle.Normal, new Color(1, 1, 1, 0.5f), TextAnchor.MiddleLeft, "Sub");
+                UIKit.At(o.title.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(44, -24), new Vector2(200, 26));
+                o.sub = UIKit.Label(o.bg.transform, subs[i], 13, FontStyle.Normal, new Color(1, 1, 1, 0.65f), TextAnchor.MiddleLeft, "Sub");
                 UIKit.At(o.sub.rectTransform, new Vector2(0, 0), new Vector2(0, 0.5f), new Vector2(16, 22), new Vector2(300, 22));
                 o.check = UIKit.Icon(o.bg.transform, UIKit.ICheck, Color.white, 18, "Check");
-                UIKit.At(o.check.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(44 + names[i].Length * 10.4f + 12, -22), new Vector2(18, 18));
+                UIKit.At(o.check.rectTransform, new Vector2(0, 1), new Vector2(0, 0.5f), new Vector2(44 + names[i].Length * 10.4f + 12, -24), new Vector2(18, 18));
                 opts[i] = o;
             }
-            BottomButton("Start Exploring", true, StartPressed);
-            Select(0);
+            startBtn = BottomButton("Start Exploring", true, StartPressed);
+            Select(f.mode == LearnMode.Quiz ? 1 : 0);
         }
 
         void GhostHud()
@@ -146,8 +147,8 @@ namespace MuscleAR
 
         void Select(int i)
         {
-            f.mode = (LearnMode)i;
-            for (int k = 0; k < 3; k++)
+            f.mode = i == 1 ? LearnMode.Quiz : LearnMode.ARExplorer;
+            for (int k = 0; k < 2; k++)
             {
                 bool on = k == i;
                 opts[k].bg.color = on ? new Color(0.1f, 0.22f, 0.45f, 0.95f) : UIKit.CardFill;
@@ -159,7 +160,33 @@ namespace MuscleAR
 
         void StartPressed() { f.Next(); }
 
-        public override void Enter() { base.Enter(); f.model.Show(false, false); f.rig.Orbit(new Vector3(0, 0.9f, 0), 2.7f, 1f, 3f, 40f, 42f); }
+        public override void Enter()
+        {
+            var mainUI = MainUIController.Instance;
+            if (mainUI == null) mainUI = UnityEngine.Object.FindAnyObjectByType<MainUIController>(FindObjectsInactive.Include);
+            if (mainUI != null)
+            {
+                if (root != null) root.gameObject.SetActive(false);
+                mainUI.ShowChooseMode();
+                return;
+            }
+
+            base.Enter();
+            f.model.Show(false, false);
+            if (f.ar != null)
+            {
+                f.ar.SetPlanesActive(false);
+            }
+            if (f.scanner != null) f.scanner.Stop();
+            if (f.lab != null) { f.lab.SetVisible(false); f.lab.gameObject.SetActive(false); }
+            if (f.rig != null && f.rig.main != null)
+            {
+                f.rig.main.enabled = true;
+                f.rig.main.tag = "MainCamera";
+                f.rig.Orbit(new Vector3(0, 0.9f, 0), 2.7f, 1f, 3f, 40f, 42f);
+            }
+            Select(f.mode == LearnMode.Quiz ? 1 : 0);
+        }
     }
 
     // ===================================================================================================
@@ -175,52 +202,72 @@ namespace MuscleAR
 
         public override void Build()
         {
-            TopShade(300, 0.7f);
-            BottomShade(340, 0.8f);
-            TopRow("SCAN");
-            Headline("Detect a surface", 33, -2);
-            Subhead("Point your camera at a table or desk.", 142, 16);
-
-            // camera toggle (live camera feed on/off)
-            var cb = UIKit.Img(root, UIKit.Circle, new Color(0.08f, 0.14f, 0.26f, 0.8f), "CamToggle", false, true);
-            UIKit.At(cb.rectTransform, new Vector2(1, 1), new Vector2(1, 0.5f), new Vector2(-122, -(Top + 58)), new Vector2(32, 32));
-            var cbt = cb.gameObject.AddComponent<Button>(); cbt.targetGraphic = cb; cbt.transition = UnityEngine.UI.Selectable.Transition.None;
-            cbt.onClick.AddListener(() => { f.ToggleFeed(); camHint.text = f.feed.Active ? "LIVE CAMERA" : (string.IsNullOrEmpty(f.feed.Status) ? "VIRTUAL CAMERA" : "VIRTUAL CAMERA"); });
-            camBtnIcon = UIKit.Icon(cb.transform, UIKit.ICamera, UIKit.BlueText, 18, "Icon");
-            Mid(camBtnIcon.rectTransform, 0, 0, 18, 18);
-            camHint = UIKit.Label(root, "VIRTUAL CAMERA", 8, FontStyle.Bold, new Color(1, 1, 1, 0.45f), TextAnchor.MiddleRight, "CamHint");
-            TR(camHint.rectTransform, 20, Top + 80, 200, 12);
+            TopShade(260, 0.45f);
+            BottomShade(300, 0.55f);
+            TopRow("SCAN", false, true);
+            Headline("Scan your space", 26, 0);
+            Subhead("Move your phone slowly to scan a surface (table or desk).", 0, 14);
 
             // scan frame with hatch marks (as in the Figma)
-            frame = UIKit.Card(root, new Color(0.1f, 0.25f, 0.55f, 0.10f), UIKit.BlueBtn, "ScanFrame");
-            BC(frame, 188, 342, 150);
-            var hatch = UIKit.Label(frame, "/ / / / /\n— — — — —\n/ / / / /", 17, FontStyle.Normal, UIKit.BlueText, TextAnchor.MiddleCenter, "Hatch");
+            frame = UIKit.Card(root, new Color(0.1f, 0.25f, 0.55f, 0.08f), UIKit.BorderAccent, "ScanFrame");
+            BC(frame, Bottom + 154, 342, 136);
+            var hatch = UIKit.Label(frame, "/ / / / /\n— — — — —\n/ / / / /", 16, FontStyle.Normal, UIKit.BlueText, TextAnchor.MiddleCenter, "Hatch");
             UIKit.Fill(hatch.rectTransform);
             hatch.lineSpacing = 0.95f;
 
-            var sp = UIKit.Pill(root, "Scanning surface…", 14, "Status");
-            sp.anchorMin = sp.anchorMax = new Vector2(0.5f, 0); sp.pivot = new Vector2(0.5f, 0); sp.anchoredPosition = new Vector2(0, 112);
+            var sp = UIKit.Pill(root, "Move phone slowly to scan…", 13, "Status");
+            sp.anchorMin = sp.anchorMax = new Vector2(0.5f, 0); sp.pivot = new Vector2(0.5f, 0);
+            sp.anchoredPosition = new Vector2(0, Bottom + 90);
             status = sp.GetComponentInChildren<Text>();
             statusCheck = UIKit.Icon(sp, UIKit.ICheck, UIKit.BlueText, 14, "Check");
             var le = statusCheck.gameObject.AddComponent<LayoutElement>(); le.preferredWidth = 14; le.preferredHeight = 14;
             statusCheck.enabled = false;
             sp.GetComponent<HorizontalLayoutGroup>().spacing = 6;
 
-            place = BottomButton("Place Anatomy", (Sprite)null, () => { if (f.scanner.Detected) f.Next(); });
+            place = BottomButton("Place Anatomy", (Sprite)null, () => TryPlaceAtCentre(), 20f);
             placeBg = place.GetComponent<Image>(); placeLabel = place.GetComponentInChildren<Text>();
+        }
+
+        // The tap is only a trigger: placement always comes from the viewport centre.
+        public override void OnTap(Vector2 p) { TryPlaceAtCentre(); }
+
+        void TryPlaceAtCentre()
+        {
+            if (!f.EnsureModelAnchoredInAR()) return; // no valid centre surface: stay in placement state
+            if (f.ar != null) f.ar.SetPlanesActive(false);
+            f.GoNumber(6);
         }
 
         public override void Enter()
         {
             base.Enter();
+            if (f.placed || f.model.useWorldAnchor || f.viewingMode == AppFlow.ViewingMode.Environment)
+            {
+                f.GoNumber(6);
+                return;
+            }
+
             f.model.Show(false, false);
             f.placed = false;
-            f.lab.SetLook(LabEnvironment.Look.Day);
-            f.rig.Frame(new Vector3(0.25f, 1.55f, 2.4f), new Vector3(0f, 0.8f, -0.1f), 52f, 1.8f);
-            f.scanner.Begin();
-            status.text = "Scanning surface…"; statusCheck.enabled = false; wasDetected = false;
-            SetPlace(false);
-            camHint.text = f.feed.Active ? "LIVE CAMERA" : "VIRTUAL CAMERA";
+            if (f.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                f.scanner.Stop();
+                if (f.lab != null) { f.lab.SetVisible(false); f.lab.gameObject.SetActive(false); }
+                if (f.rig != null && f.rig.main != null)
+                {
+                    f.rig.main.enabled = false;
+                    f.rig.main.tag = "Untagged";
+                }
+                if (f.ar != null)
+                {
+                    f.ar.SetARActive(true);
+                    f.ar.SetPlanesActive(true);
+                }
+            }
+            else
+            {
+                f.scanner.Begin();
+            }
         }
 
         public override void Exit() { f.scanner.Stop(); }
@@ -235,15 +282,32 @@ namespace MuscleAR
         public override void Tick()
         {
             base.Tick();
-            if (f.scanner.Detected && !wasDetected)
+
+            if (f.ar != null && f.ar.IsARActive)
             {
-                wasDetected = true;
-                status.text = "Surface detected"; statusCheck.enabled = true;
-                SetPlace(true);
+                if (f.ar.HasDetectedPlanes)
+                {
+                    wasDetected = true;
+                    f.scanner.MarkDetected();
+                    bool centreValid = f.ar.TryRaycastViewportCentre(out _);
+                    status.text = centreValid ? "Surface found! Tap anywhere to place at the centre"
+                        : "Aim the centre of the screen at the detected surface";
+                    statusCheck.enabled = centreValid;
+                    SetPlace(centreValid);
+                }
             }
+            else
+            {
+                if (f.scanner.Detected && !wasDetected)
+                {
+                    wasDetected = true;
+                    status.text = "Surface detected"; statusCheck.enabled = true;
+                    SetPlace(true);
+                }
+            }
+
             float p = 0.5f + 0.5f * Mathf.Sin(T * 3f);
             frame.localScale = Vector3.one * (f.scanner.Detected ? 1f : 1f + 0.012f * p);
-            // allow quick progress for users who press Next on the keyboard
         }
     }
 
@@ -259,9 +323,9 @@ namespace MuscleAR
         {
             TopShade(300, 0.55f);
             BottomShade(380, 0.9f);
-            TopRow("PLACE", true);
+            TopRow("PLACE", false, true);
             ViewerCaption();
-            Headline("Position anatomy", 33, 6);
+            Headline("Position anatomy", 26, 0);
 
             var r = UIKit.Img(root, UIKit.CircleRing, new Color(0.38f, 0.66f, 1f, 0.95f), "PlaceRing");
             BC(r.rectTransform, 116, 124, 38);
@@ -274,42 +338,71 @@ namespace MuscleAR
             var tt = UIKit.Label(tip, "Anatomy Model\nTap to place", 15, FontStyle.Normal, Color.white, TextAnchor.MiddleCenter, "T");
             UIKit.Fill(tt.rectTransform);
 
-            BottomButton("Place Here", UIKit.ICheck, DoPlace);
+            BottomButton("Place Here", UIKit.ICheck, () => DoPlace(null));
         }
 
-        void DoPlace()
+        void DoPlace(Vector2? tapPos)
         {
+            if (f.ar != null && f.ar.IsARActive)
+            {
+                Vector2 screenPoint = tapPos.HasValue ? tapPos.Value : new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
+                Pose hitPose;
+                if (f.ar.TryRaycastPlane(screenPoint, out hitPose) || f.ar.TryGetFirstPlanePose(out hitPose))
+                {
+                    Vector3 camPos = f.ar.arCamera != null ? f.ar.arCamera.transform.position : Vector3.zero;
+                    f.model.SetAnchor(hitPose.position, hitPose.rotation, camPos);
+                    f.ar.SetPlanesActive(false);
+                }
+            }
             f.placed = true;
-            f.model.Show(true, true);   // confirm pop
+            f.model.Show(true, false);   // confirm pop
             f.Next();
         }
 
         public override void OnTap(Vector2 p)
         {
-            MuscleId id;
-            if (T > 0.6f) DoPlace();
+            if (T > 0.6f) DoPlace(p);
         }
 
         public override void Enter()
         {
             base.Enter();
-            f.lab.SetLook(LabEnvironment.Look.Lab);
+            if (f.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                if (f.lab != null) f.lab.SetVisible(false);
+                if (f.rig != null && f.rig.main != null)
+                {
+                    f.rig.main.enabled = false;
+                    f.rig.main.tag = "Untagged";
+                }
+                if (f.ar != null) f.ar.SetARActive(true);
+                f.EnsureModelAnchoredInAR();
+            }
+            else
+            {
+                if (f.lab != null)
+                {
+                    f.lab.SetVisible(true);
+                    f.lab.SetLook(f.currentEnvironmentLook);
+                }
+                if (f.rig != null && f.rig.main != null)
+                {
+                    f.rig.main.enabled = true;
+                    f.rig.main.tag = "MainCamera";
+                }
+                f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            }
             f.scanner.Stop();
-            f.model.ResetTransform(); SetupModel(ModelController.Mode.Move, true, true); f.model.ShowDisc(true);
+            SetupModel(ModelController.Mode.Move, true, false); f.model.ShowDisc(true);
             f.body.SetLayer(BodyLayer.Muscle);
-            f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
             PlaceLabels(f);
         }
 
         public static void PlaceLabels(AppFlow f)
         {
-            var b = f.body; var L = f.labels;
-            L.Add(() => b.AnchorPos("torso"), new Vector2(-0.62f, 0.14f), "FULL MUSCULOSKELETAL SYSTEM");
-            L.Add(() => b.AnchorPos("heart"), new Vector2(0.45f, 0.36f), "HEART");
-            L.Add(() => b.AnchorPos("lungs"), new Vector2(0.55f, 0.22f), "LUNGS");
-            L.Add(() => b.AnchorPos("brain"), new Vector2(0.62f, 0.06f), "BRAIN");
-            L.Add(() => b.MuscleCenter(MuscleId.GluteusMaximus, 1), new Vector2(0.62f, -0.1f), "GLUTEUS MAXIMUS");
-            L.Add(() => b.MuscleCenter(MuscleId.GluteusMaximus, -1), new Vector2(-0.6f, -0.22f), "GLUTEUS MAXIMUS");
+            // Unwanted labels and callouts (Gluteus Maximus, Musculoskeletal System, Heart, Lungs, Brain) removed
+            // Screen remains clean and uncluttered.
+            f.labels.Clear();
         }
 
         public override void Tick()
@@ -330,33 +423,97 @@ namespace MuscleAR
 
         public override void Build()
         {
-            TopShade(300, 0.5f);
-            BottomShade(260, 0.9f);
-            TopRow("AR ACTIVE", true);
+            TopShade(260, 0.45f);
+            BottomShade(280, 0.65f);
+            TopRow("AR ACTIVE", false, true);
             ViewerCaption();
-            Headline("Ready to explore", 33, 6);
+            Headline("Ready to explore", 26, 0);
 
-            var bar = UIKit.Card(root, new Color(0.04f, 0.07f, 0.12f, 0.78f), new Color(0.3f, 0.4f, 0.6f, 0.3f), "GestureBar");
-            BC(bar, 30, 342, 62);
-            string[] names = { "Move", "Zoom", "Rotate", "Tap" };
-            Sprite[] ic = { UIKit.IMove, UIKit.IZoom, UIKit.IRotate, UIKit.ITap };
-            for (int i = 0; i < 4; i++)
+            // Model Transform & Navigation Toolbar (5 buttons with consistent sizing)
+            var bar = UIKit.Card(root, new Color(0.06f, 0.10f, 0.18f, 0.95f), UIKit.BorderSubtle, "ARControlsBar");
+            BC(bar, Bottom + 18, 350, 44);
+
+            // Rotate left, Rotate right, Zoom in, Zoom out, Reset View (re-scan is in the top bar)
+            string[] btnLabels = { "⟲ -15°", "⟳ +15°", "Zoom −", "Zoom +", "Reset View" };
+            Action[] actions = new Action[] {
+                () => { f.model.yaw -= 15f; f.model.Apply(); },
+                () => { f.model.yaw += 15f; f.model.Apply(); },
+                () => { f.model.scale = Mathf.Max(0.15f, f.model.scale * 0.85f); f.model.Apply(); },
+                () => { f.model.scale = Mathf.Min(2.0f, f.model.scale * 1.18f); f.model.Apply(); },
+                () => { f.model.ResetTransform(); }
+            };
+
+            for (int i = 0; i < 5; i++)
             {
-                float x = -128f + i * 85f;
-                var im = UIKit.Icon(bar, ic[i], Color.white, 22, names[i] + "Icon");
-                UIKit.At(im.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(x - 24, 0), new Vector2(20, 20));
-                var tl = UIKit.Label(bar, names[i], 14, FontStyle.Normal, Color.white, TextAnchor.MiddleLeft, names[i]);
-                UIKit.At(tl.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0, 0.5f), new Vector2(x - 8, 0), new Vector2(60, 22));
+                int idx = i;
+                float x = -136f + i * 68f;
+                var btnImg = UIKit.Img(bar, UIKit.Round, new Color(0.10f, 0.16f, 0.28f, 0.95f), "Btn" + i, true, true);
+                UIKit.At(btnImg.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(x, 0), new Vector2(62, 34));
+                var bRing = UIKit.Img(btnImg.transform, UIKit.Ring, UIKit.BorderSubtle, "Border", true);
+                UIKit.Fill(bRing.rectTransform);
+
+                var btn = btnImg.gameObject.AddComponent<Button>();
+                btn.targetGraphic = btnImg;
+                btn.transition = Selectable.Transition.None;
+                btnImg.gameObject.AddComponent<PressScale>();
+                btn.onClick.AddListener(() => actions[idx]());
+                MuscleAudioController.AttachClickSound(btn);
+
+                var lbl = UIKit.Label(btnImg.transform, btnLabels[i], 10, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, "Txt");
+                UIKit.Fill(lbl.rectTransform);
             }
-            Fab(104);
+
+            // Button to jump straight to interactive muscle selection (no extra arrow)
+            var expBtn = BottomButton("Explore Muscles", (Sprite)null, () => f.GoNumber(9), 72f);
+
+            // Drag repositioning guidance
+            var dragHint = UIKit.Label(root, "Drag to rotate  •  Pinch to zoom  •  Two fingers to move", 12, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, "GestureHint");
+            BC(dragHint.rectTransform, Bottom + 132, 390, 22);
+            var mouseHint = UIKit.Label(root, "Editor: left-drag rotate  •  right-drag move  •  scroll zoom", 9, FontStyle.Normal, new Color(0.82f, 0.9f, 1f, 0.82f), TextAnchor.MiddleCenter, "MouseHint");
+            BC(mouseHint.rectTransform, Bottom + 110, 390, 18);
+        }
+
+        public override void OnTap(Vector2 p)
+        {
+            MuscleId id;
+            if (f.model.Pick(p, out id) && MuscleDB.IsTarget(id))
+            {
+                if (MuscleAudioController.Instance != null)
+                    MuscleAudioController.Instance.PlayClick();
+                f.selected = id;
+                f.GoNumber(10);
+            }
         }
 
         public override void Enter()
         {
             base.Enter();
-            f.lab.SetLook(LabEnvironment.Look.Lab);
-            SetupModel(ModelController.Mode.Move, true, false); f.model.ShowDisc(false);
-            f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            if (f.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                if (f.lab != null) f.lab.SetVisible(false);
+                if (f.rig != null && f.rig.main != null)
+                {
+                    f.rig.main.enabled = false;
+                    f.rig.main.tag = "Untagged";
+                }
+                if (f.ar != null) f.ar.SetARActive(true);
+                f.EnsureModelAnchoredInAR();
+            }
+            else
+            {
+                if (f.lab != null)
+                {
+                    f.lab.SetVisible(true);
+                    f.lab.SetLook(f.currentEnvironmentLook);
+                }
+                if (f.rig != null && f.rig.main != null)
+                {
+                    f.rig.main.enabled = true;
+                    f.rig.main.tag = "MainCamera";
+                }
+                f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            }
+            SetupModel(ModelController.Mode.Explore, true, false); f.model.ShowDisc(true);
             PlaceModelScreen.PlaceLabels(f);
         }
     }
@@ -373,9 +530,10 @@ namespace MuscleAR
         {
             TopShade(300, 0.5f);
             BottomShade(300, 0.9f);
-            TopRow("GESTURE", true);
+            TopRow("GESTURE", false, true);
             ViewerCaption();
-            Headline("Drag to move", 33, 6);
+            Headline("Drag to move", 26, 0);
+            AddResetRescanButton();
 
             hand = UIKit.NewRect("HandGroup", root);
             BC(hand, 120, 200, 110);
@@ -396,10 +554,18 @@ namespace MuscleAR
         {
             base.Enter();
             done = false; doneT = 0;
-            pillText.text = "Drag to move";
-            f.lab.SetLook(LabEnvironment.Look.Lab);
-            SetupModel(ModelController.Mode.Move, true, false); f.model.movedDistance = 0; f.model.ShowDisc(false);
-            f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            if (f.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                if (f.lab != null) { f.lab.SetVisible(false); f.lab.gameObject.SetActive(false); }
+                if (f.rig != null && f.rig.main != null) { f.rig.main.enabled = false; f.rig.main.tag = "Untagged"; }
+                if (f.ar != null) f.ar.SetARActive(true);
+            }
+            else
+            {
+                if (f.lab != null) { f.lab.gameObject.SetActive(true); f.lab.SetVisible(true); f.lab.SetLook(f.currentEnvironmentLook); }
+                if (f.rig != null && f.rig.main != null) { f.rig.main.enabled = true; f.rig.main.tag = "MainCamera"; }
+                f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            }
             PlaceModelScreen.PlaceLabels(f);
         }
 
@@ -429,9 +595,10 @@ namespace MuscleAR
         {
             TopShade(300, 0.5f);
             BottomShade(300, 0.9f);
-            TopRow("GESTURE", true);
+            TopRow("GESTURE", false, true);
             ViewerCaption();
-            Headline("Rotate & zoom", 33, 6);
+            Headline("Rotate & zoom", 26, 0);
+            AddResetRescanButton();
 
             var g = UIKit.NewRect("Icons", root); BC(g, 118, 220, 90);
             var r = UIKit.Icon(g, UIKit.IRotate, new Color(0.45f, 0.72f, 1f, 1f), 62, "Rotate");
@@ -450,10 +617,18 @@ namespace MuscleAR
         public override void Enter()
         {
             base.Enter();
-            done = false; doneT = 0;
-            f.lab.SetLook(LabEnvironment.Look.Lab);
-            SetupModel(ModelController.Mode.Explore, true, false); f.model.rotatedDegrees = 0; f.model.zoomedRatio = 1f; f.model.ShowDisc(false);
-            f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            if (f.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                if (f.lab != null) { f.lab.SetVisible(false); f.lab.gameObject.SetActive(false); }
+                if (f.rig != null && f.rig.main != null) { f.rig.main.enabled = false; f.rig.main.tag = "Untagged"; }
+                if (f.ar != null) f.ar.SetARActive(true);
+            }
+            else
+            {
+                if (f.lab != null) { f.lab.gameObject.SetActive(true); f.lab.SetVisible(true); f.lab.SetLook(f.currentEnvironmentLook); }
+                if (f.rig != null && f.rig.main != null) { f.rig.main.enabled = true; f.rig.main.tag = "MainCamera"; }
+                f.rig.Frame(new Vector3(0, 1.62f, 2.45f), new Vector3(0, 0.88f, -0.1f), 46f, 1.8f);
+            }
             PlaceModelScreen.PlaceLabels(f);
         }
 

@@ -16,6 +16,25 @@ namespace MuscleAR
         Material windowMat;
         readonly List<Renderer> renderers = new List<Renderer>();
         float blend; float target;
+        bool placementAligned;
+        public Vector3 TableSurfaceCenter => transform.TransformPoint(new Vector3(0f, TableTop, 0f));
+
+        /// <summary>Place the existing lab once beneath the anatomy, independently of subsequent gestures.</summary>
+        public void AlignToPlacement(ModelController model)
+        {
+            if (placementAligned || model == null || model.root == null) return;
+            transform.rotation = Quaternion.Euler(0f, model.root.eulerAngles.y, 0f);
+            transform.position = model.root.position - Vector3.up * TableTop;
+            placementAligned = true;
+        }
+
+        public void FrameEnvironment(CameraRig rig)
+        {
+            if (rig == null) return;
+            // Explicit mode entry may frame the environment; educational screen entry may not.
+            rig.Snap(transform.TransformPoint(new Vector3(0f, 1.62f, 2.45f)),
+                transform.TransformPoint(new Vector3(0f, 0.88f, -0.1f)), 46f);
+        }
         Color ambLab = new Color(0.075f, 0.085f, 0.11f), ambDay = new Color(0.42f, 0.43f, 0.47f);
 
         public static LabEnvironment Create(Transform parent)
@@ -224,17 +243,38 @@ namespace MuscleAR
 
         public void SetLook(Look l, bool instant = false)
         {
+            if (AppFlow.I != null && AppFlow.I.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                SetVisible(false);
+                return;
+            }
+            if (ARManager.I != null && ARManager.I.IsARActive && (AppFlow.I == null || AppFlow.I.viewingMode != AppFlow.ViewingMode.Environment))
+            {
+                SetVisible(false);
+                return;
+            }
             target = l == Look.Day ? 1f : 0f;
             if (instant) { blend = target; Apply(); }
         }
 
         public void SetVisible(bool v)
         {
+            gameObject.SetActive(v);
             foreach (var r in renderers) if (r != null) r.enabled = v;
+            if (sun != null) sun.enabled = v;
+            if (lamp != null) lamp.enabled = v;
+            if (overhead != null) overhead.enabled = v;
+            if (glow != null) glow.enabled = v;
         }
 
         void Update()
         {
+            if (AppFlow.I != null && AppFlow.I.viewingMode == AppFlow.ViewingMode.CameraAR)
+            {
+                if (gameObject.activeSelf) gameObject.SetActive(false);
+                return;
+            }
+
             if (Mathf.Abs(blend - target) > 0.001f)
             {
                 blend = Mathf.MoveTowards(blend, target, Time.deltaTime * 1.4f);

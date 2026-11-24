@@ -9,7 +9,8 @@ namespace MuscleAR
         ForearmFlexors, ForearmExtensors, PronatorTeres, RectusFemoris, VastusLateralis,
         VastusMedialis, Sartorius, Adductors, TensorFasciaeLatae, GluteusMedius, GluteusMaximus,
         TibialisAnterior, Gastrocnemius, Soleus, PeroneusLongus, Masseter, Temporalis,
-        OrbicularisOculi, OrbicularisOris, Frontalis
+        OrbicularisOculi, OrbicularisOris, Frontalis,
+        QuadricepsFemoris
     }
 
     public class MuscleInfo
@@ -35,18 +36,38 @@ namespace MuscleAR
 
         static MuscleDB()
         {
-            A(MuscleId.BicepsBrachii, "Biceps Brachii", "M. biceps brachii", "Upper arm", "Scapula", "Radius",
-              "Elbow flexion", "Primary actions: Elbow flexion; Forearm supination");
+            A(MuscleId.BicepsBrachii, "Biceps Brachii", "M. biceps brachii",
+              "Anterior compartment of the arm (front of upper arm)",
+              "Scapula (Short head: coracoid process; Long head: supraglenoid tubercle)",
+              "Radial tuberosity and bicipital aponeurosis into deep forearm fascia",
+              "Elbow flexion and forearm supination; assists shoulder flexion",
+              "The biceps brachii is a prominent two-headed muscle spanning both the shoulder and elbow joints. It functions as the primary forearm supinator (turning the palm upward) and a major elbow flexor, playing an essential role in lifting, pulling, and carrying objects.");
+
+            A(MuscleId.Deltoid, "Deltoid", "M. deltoideus",
+              "Shoulder region (caps the glenohumeral joint)",
+              "Lateral third of clavicle, acromion, and spine of the scapula",
+              "Deltoid tuberosity on the lateral shaft of the humerus",
+              "Shoulder abduction (15°–90°); anterior fibers flex; posterior fibers extend",
+              "The deltoid is a powerful triangular muscle that forms the rounded contour of the shoulder. Its multipennate lateral fibers are the primary mover for raising the arm sideways away from the torso, while its anterior and posterior segments stabilize multi-angle arm reach.");
+
+            A(MuscleId.PectoralisMajor, "Pectoralis Major", "M. pectoralis major",
+              "Anterior thoracic wall (upper chest)",
+              "Medial clavicle, sternum, and costal cartilages of ribs 1 to 6",
+              "Lateral lip of the intertubercular bicipital groove of humerus",
+              "Arm adduction, medial internal rotation, and horizontal chest flexion",
+              "The pectoralis major is a thick, fan-shaped muscle covering the upper chest. It draws the arm across the body during pushing, pressing, and hugging movements, stabilizing the upper limb against the rib cage during forward resistance.");
+
+            A(MuscleId.RectusAbdominis, "Rectus Abdominis", "M. rectus abdominis",
+              "Anterior abdominal wall along the core midline",
+              "Pubic crest and pubic symphysis of the pelvis",
+              "Xiphoid process of sternum and costal cartilages of ribs 5 to 7",
+              "Trunk flexion (bending forward) and intra-abdominal compression",
+              "The rectus abdominis is a paired vertical strap muscle separated by the linea alba and divided by tendinous intersections. It flexes the lumbar spine, compresses internal abdominal organs during exhalation, and stabilizes pelvic tilt during standing and gait.");
+
             A(MuscleId.Brachialis, "Brachialis", "M. brachialis", "Upper arm", "Humerus", "Ulna",
               "Elbow flexion", "The workhorse of elbow flexion, lying beneath the biceps");
             A(MuscleId.TricepsBrachii, "Triceps Brachii", "M. triceps brachii", "Back of upper arm", "Scapula, Humerus", "Ulna",
               "Elbow extension", "Primary actions: Elbow extension; Shoulder adduction");
-            A(MuscleId.Deltoid, "Deltoid", "M. deltoideus", "Shoulder region", "Clavicle, Scapula", "Humerus",
-              "Shoulder abduction", "Primary actions: Shoulder abduction, flexion and extension");
-            A(MuscleId.PectoralisMajor, "Pectoralis Major", "M. pectoralis major", "Chest", "Clavicle, Sternum", "Humerus",
-              "Shoulder adduction", "Primary actions: Adduction and medial rotation of the arm");
-            A(MuscleId.RectusAbdominis, "Rectus Abdominis", "M. rectus abdominis", "Front of abdomen", "Pubis", "Ribs 5-7, Xiphoid",
-              "Trunk flexion", "Primary actions: Flexes the trunk; Compresses the abdomen");
             A(MuscleId.ExternalOblique, "External Oblique", "M. obliquus externus", "Side of abdomen", "Lower ribs", "Iliac crest, Linea alba",
               "Trunk rotation", "Primary actions: Trunk rotation; Lateral flexion");
             A(MuscleId.SerratusAnterior, "Serratus Anterior", "M. serratus anterior", "Side of chest", "Ribs 1-8", "Scapula",
@@ -81,8 +102,14 @@ namespace MuscleAR
               "Hip extension", "Primary actions: Hip extension; External rotation");
             A(MuscleId.TibialisAnterior, "Tibialis Anterior", "M. tibialis anterior", "Front of shin", "Tibia", "Medial cuneiform",
               "Ankle dorsiflexion", "Primary actions: Dorsiflexion; Foot inversion");
-            A(MuscleId.Gastrocnemius, "Gastrocnemius", "M. gastrocnemius", "Calf", "Femoral condyles", "Calcaneus",
-              "Plantar flexion", "Primary actions: Plantar flexion; Knee flexion");
+
+            A(MuscleId.Gastrocnemius, "Gastrocnemius", "M. gastrocnemius",
+              "Posterior compartment of the leg (superficial calf)",
+              "Medial and lateral epicondyles of the femur",
+              "Posterior surface of calcaneus (heel bone) via the Achilles tendon",
+              "Plantar flexion of the foot at the ankle; assists knee flexion",
+              "The gastrocnemius is the prominent two-headed muscle shaping the calf. Anchored directly to the heel by the robust Achilles tendon, it propels the body forward and upward during push-off in walking, sprinting, and leaping.");
+
             A(MuscleId.Soleus, "Soleus", "M. soleus", "Deep calf", "Tibia, Fibula", "Calcaneus",
               "Plantar flexion", "Primary actions: Plantar flexion with the knee bent");
             A(MuscleId.PeroneusLongus, "Peroneus Longus", "M. fibularis longus", "Outer shin", "Fibula", "First metatarsal",
@@ -97,9 +124,33 @@ namespace MuscleAR
               "Lip closure", "Primary actions: Closes and purses the lips");
             A(MuscleId.Frontalis, "Frontalis", "M. frontalis", "Forehead", "Galea aponeurotica", "Skin of brow",
               "Brow elevation", "Primary actions: Raises the eyebrows");
+
+            A(MuscleId.QuadricepsFemoris, "Quadriceps Femoris", "M. quadriceps femoris",
+              "Anterior compartment of the thigh (front of leg)",
+              "Femur shaft/linea aspera & pelvis (anterior inferior iliac spine)",
+              "Patella and tibial tuberosity via the robust patellar ligament",
+              "Knee extension (straightening leg); rectus femoris assists hip flexion",
+              "The quadriceps femoris is the massive four-part extensor group covering the front of the thigh (rectus femoris, vastus lateralis, medialis, and intermedius). It provides the essential power needed to stand, walk, run, jump, and resist gravitational collapse.");
         }
 
-        public static MuscleInfo Get(MuscleId id) { return db[id]; }
+        public static readonly MuscleId[] TargetMuscles = new MuscleId[]
+        {
+            MuscleId.PectoralisMajor,
+            MuscleId.Deltoid,
+            MuscleId.RectusAbdominis,
+            MuscleId.BicepsBrachii,
+            MuscleId.Gastrocnemius,
+            MuscleId.QuadricepsFemoris
+        };
+
+        public static bool IsTarget(MuscleId id)
+        {
+            return id == MuscleId.PectoralisMajor || id == MuscleId.Deltoid ||
+                   id == MuscleId.RectusAbdominis || id == MuscleId.BicepsBrachii ||
+                   id == MuscleId.Gastrocnemius || id == MuscleId.QuadricepsFemoris;
+        }
+
+        public static MuscleInfo Get(MuscleId id) { return db.TryGetValue(id, out var info) ? info : db[MuscleId.BicepsBrachii]; }
         public static IEnumerable<MuscleInfo> All { get { return db.Values; } }
     }
 }

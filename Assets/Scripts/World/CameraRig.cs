@@ -51,11 +51,13 @@ namespace MuscleAR
 
         public void Frame(Vector3 p, Vector3 l, float f = 45f, float spd = 2.2f)
         {
+            if (AppFlow.I != null && AppFlow.I.placed) return;
             pos = p; look = l; fov = f; speed = spd; orbit = false;
         }
 
         public void Orbit(Vector3 center, float radius, float height, float degPerSec, float startDeg = 20f, float f = 42f)
         {
+            if (AppFlow.I != null && AppFlow.I.placed) return;
             orbit = true; oCenter = center; oRadius = radius; oHeight = height; oSpeed = degPerSec; oAngle = startDeg; fov = f; speed = 1.8f;
         }
 
@@ -75,6 +77,15 @@ namespace MuscleAR
 
         void LateUpdate()
         {
+            bool isARMode = (AppFlow.I != null && AppFlow.I.viewingMode == AppFlow.ViewingMode.CameraAR) ||
+                            (ARManager.I != null && ARManager.I.IsARActive && (AppFlow.I == null || AppFlow.I.viewingMode != AppFlow.ViewingMode.Environment));
+            if (isARMode)
+            {
+                if (main != null && main.enabled) { main.enabled = false; main.tag = "Untagged"; }
+                if (bg != null && bg.enabled) bg.enabled = false;
+                if (close != null && close.enabled) close.enabled = false;
+                return;
+            }
             float dt = Mathf.Min(Time.deltaTime, 0.05f);
             if (orbit)
             {

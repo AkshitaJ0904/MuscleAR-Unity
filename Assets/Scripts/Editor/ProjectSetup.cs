@@ -45,9 +45,9 @@ namespace MuscleAR.EditorTools
             PlayerSettings.allowedAutorotateToLandscapeRight = false;
             PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.iOS.cameraUsageDescription = "MuscleAR uses the camera to place the anatomy model in your space.";
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.iOS, "com.musclear.app");
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.musclear.app");
-            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Standalone, "com.musclear.app");
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.iOS, "com.musclear.app");
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Android, "com.musclear.app");
+            PlayerSettings.SetApplicationIdentifier(UnityEditor.Build.NamedBuildTarget.Standalone, "com.musclear.app");
             PlayerSettings.colorSpace = ColorSpace.Linear;
             PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneOSX, true);
             AssetDatabase.SaveAssets();
@@ -59,7 +59,7 @@ namespace MuscleAR.EditorTools
         {
             try
             {
-                var sizesType = typeof(Editor).Assembly.GetType("UnityEditor.GameViewSizes");
+                var sizesType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GameViewSizes");
                 var singleType = typeof(ScriptableSingleton<>).MakeGenericType(sizesType);
                 var instance = singleType.GetProperty("instance").GetValue(null, null);
                 var group = sizesType.GetMethod("GetGroup").Invoke(instance, new object[] { 0 }); // Standalone
@@ -77,14 +77,14 @@ namespace MuscleAR.EditorTools
                 }
                 if (index < 0)
                 {
-                    var sizeType = typeof(Editor).Assembly.GetType("UnityEditor.GameViewSize");
-                    var enumType = typeof(Editor).Assembly.GetType("UnityEditor.GameViewSizeType");
+                    var sizeType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GameViewSize");
+                    var enumType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GameViewSizeType");
                     var ctor = sizeType.GetConstructor(new[] { enumType, typeof(int), typeof(int), typeof(string) });
                     var size = ctor.Invoke(new object[] { Enum.ToObject(enumType, 1), 390, 844, "MuscleAR Phone Portrait 390x844" });
                     groupType.GetMethod("AddCustomSize").Invoke(group, new[] { size });
                     index = total;
                 }
-                var gvType = typeof(Editor).Assembly.GetType("UnityEditor.GameView");
+                var gvType = typeof(UnityEditor.Editor).Assembly.GetType("UnityEditor.GameView");
                 var win = EditorWindow.GetWindow(gvType);
                 gvType.GetProperty("selectedSizeIndex", BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic).SetValue(win, index, null);
                 win.Repaint();

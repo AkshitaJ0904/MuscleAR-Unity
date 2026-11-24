@@ -9,13 +9,16 @@ namespace MuscleAR
     public static class UIKit
     {
         public static Font Font;
-        public static readonly Color BlueBtn = new Color32(66, 135, 245, 255);
+        public static readonly Color BlueBtn = new Color32(37, 99, 235, 255);
         public static readonly Color BlueText = new Color32(96, 165, 250, 255);
-        public static readonly Color BlueLine = new Color32(59, 130, 246, 255);
-        public static readonly Color Navy = new Color32(10, 15, 26, 235);
-        public static readonly Color PillFill = new Color32(24, 58, 112, 190);
-        public static readonly Color Dim = new Color(1, 1, 1, 0.62f);
-        public static readonly Color CardFill = new Color32(13, 20, 34, 235);
+        public static readonly Color BlueLine = new Color32(59, 130, 246, 180);
+        public static readonly Color Navy = new Color32(11, 17, 32, 245);
+        public static readonly Color PillFill = new Color32(15, 23, 42, 230);
+        public static readonly Color Dim = new Color(0.60f, 0.68f, 0.78f, 0.95f);
+        public static readonly Color CardFill = new Color32(15, 23, 42, 245);
+        public static readonly Color CardFillLight = new Color32(23, 32, 54, 240);
+        public static readonly Color BorderSubtle = new Color32(51, 65, 85, 180);
+        public static readonly Color BorderAccent = new Color32(59, 130, 246, 160);
 
         public static Sprite Round, Ring, Circle, CircleRing, GradDown, GradUp, White;
         public static Sprite IArrow, ICheck, ICamera, IARBox, IList, IDiamond, IMove, IZoom, IRotate, ITap, IFinger, IProfile, INeedle;
@@ -105,7 +108,7 @@ namespace MuscleAR
 
         static Sprite RoundedSprite(bool ring)
         {
-            int s = 128; float r = 56f, thick = 5f;
+            int s = 128; float r = 10f, thick = 2.5f;
             return MakeSprite(s, s, (x, y) =>
             {
                 float px = x + 0.5f - s * 0.5f, py = y + 0.5f - s * 0.5f;
@@ -114,7 +117,7 @@ namespace MuscleAR
                 float fill = Mathf.Clamp01(0.5f - d);
                 if (!ring) return fill;
                 return fill * Mathf.Clamp01(0.5f + (d + thick));
-            }, 200f, new Vector4(r, r, r, r));
+            }, 100f, new Vector4(r, r, r, r));
         }
 
         static Sprite CircleSprite(bool ring)
@@ -222,29 +225,31 @@ namespace MuscleAR
             return bg.rectTransform;
         }
 
-        public static Button PrimaryButton(Transform parent, string text, bool arrow, Action onClick, float width = 342, float height = 56)
+        public static Button PrimaryButton(Transform parent, string text, bool arrow, Action onClick, float width = 342, float height = 52)
         {
             return PrimaryButton(parent, text, arrow ? IArrow : null, onClick, width, height);
         }
 
-        public static Button PrimaryButton(Transform parent, string text, Sprite icon, Action onClick, float width = 342, float height = 56)
+        public static Button PrimaryButton(Transform parent, string text, Sprite icon, Action onClick, float width = 342, float height = 52)
         {
             var bg = Img(parent, Round, BlueBtn, "Button", true, true);
             bg.rectTransform.sizeDelta = new Vector2(width, height);
+            var ring = Img(bg.transform, Ring, BorderAccent, "Border", true);
+            Fill(ring.rectTransform);
             var btn = bg.gameObject.AddComponent<Button>();
             btn.targetGraphic = bg; btn.transition = Selectable.Transition.None;
             bg.gameObject.AddComponent<PressScale>();
-            var t = Label(bg.transform, text, 19, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, "Label");
+            var t = Label(bg.transform, text, 16, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, "Label");
             Fill(t.rectTransform);
             t.horizontalOverflow = HorizontalWrapMode.Overflow;
             if (icon != null)
             {
-                float tw = text.Length * 10.2f;
-                var a = Icon(bg.transform, icon, Color.white, 22, "Icon");
-                At(a.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(tw * 0.5f + 18f, 0), new Vector2(20, 20));
-                t.rectTransform.offsetMin = new Vector2(-18, 0); t.rectTransform.offsetMax = new Vector2(-18, 0);
+                var a = Icon(bg.transform, icon, Color.white, 18, "Icon");
+                At(a.rectTransform, new Vector2(1, 0.5f), new Vector2(1, 0.5f), new Vector2(-16, 0), new Vector2(18, 18));
+                t.rectTransform.offsetMax = new Vector2(-28, 0);
             }
             if (onClick != null) btn.onClick.AddListener(() => onClick());
+            MuscleAudioController.AttachClickSound(btn);
             return btn;
         }
 
@@ -259,6 +264,7 @@ namespace MuscleAR
             var a = Icon(bg.transform, IArrow, Color.white, size * 0.56f, "Arrow");
             At(a.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size * 0.56f, size * 0.56f));
             btn.onClick.AddListener(() => onClick());
+            MuscleAudioController.AttachClickSound(btn);
             return btn;
         }
 

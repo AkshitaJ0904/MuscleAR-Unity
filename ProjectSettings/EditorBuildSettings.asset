@@ -8,4 +8,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/MuscleAR.unity
     guid: 18b212f5de37b471da69f688dac2dcbb
-  m_configObjects: {}
+  m_configObjects:
+    UnityEditor.XR.ARCore.ARCoreSettings: {fileID: 11400000, guid: 5886209041e51f24d8aec59d9e718143, type: 2}
+    com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
+    com.unity.xr.arfoundation.simulation_settings: {fileID: 11400000, guid: caa3e86eb7de4ce48ba3bba80e11875c, type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: a5ed1b3a34c3dd94b926ee438516d12c, type: 2}

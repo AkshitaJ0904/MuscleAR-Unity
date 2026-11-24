@@ -85,6 +85,7 @@ namespace MuscleAR
             m.indexFormat = verts.Length > 65000 ? UnityEngine.Rendering.IndexFormat.UInt32 : UnityEngine.Rendering.IndexFormat.UInt16;
             m.vertices = verts; m.normals = norms; m.uv = uvs; m.triangles = tris;
             m.RecalculateBounds();
+            m.RecalculateTangents();
             return m;
         }
 
@@ -141,6 +142,25 @@ namespace MuscleAR
             unitSphere = Sweep(pts, ups, r, r, 28, 1f);
             unitSphere.name = "UnitSphere";
             return unitSphere;
+        }
+
+        /// <summary>Directly generates an ellipsoid mesh sized by radii in meters, so GameObject.localScale remains (1,1,1).</summary>
+        public static Mesh Ellipsoid(Vector3 radii, int rings = 20, int radial = 28)
+        {
+            var pts = new Vector3[rings]; var rx = new float[rings]; var ry = new float[rings]; var ups = new Vector3[rings];
+            for (int i = 0; i < rings; i++)
+            {
+                float t = (float)i / (rings - 1);
+                float y = -Mathf.Cos(t * Mathf.PI) * radii.y;
+                pts[i] = new Vector3(0, y, 0);
+                float sinT = Mathf.Max(0.0005f, Mathf.Sin(t * Mathf.PI));
+                rx[i] = sinT * radii.x;
+                ry[i] = sinT * radii.z;
+                ups[i] = Vector3.forward;
+            }
+            Mesh m = Sweep(pts, ups, rx, ry, radial, 1f);
+            m.name = "Ellipsoid";
+            return m;
         }
 
         /// <summary>Spindle (fusiform) muscle belly profile: 0..1 along, returns 0..1 radius factor.</summary>

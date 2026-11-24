@@ -61,9 +61,14 @@ namespace MuscleAR
         Limb torso, neck;
         float wMul = 1.4f, tMul = 1.15f;
 
-        static readonly Color MuscleRed = new Color(0.68f, 0.16f, 0.14f);
+        static readonly Color MuscleRed = new Color(0.78f, 0.18f, 0.16f);
 
-        public static HumanBody Build() { return new HumanBodyBuilder().Run(); }
+        public static HumanBody Build()
+        {
+            var body = new HumanBodyBuilder().Run();
+            body.InitializeActionRig();
+            return body;
+        }
 
         // ---------- construction helpers ----------
         Transform NewRoot(Transform p, string n) { var g = new GameObject(n); g.transform.SetParent(p, false); return g.transform; }
@@ -81,10 +86,10 @@ namespace MuscleAR
 
         GameObject Ball(Transform parent, string name, Vector3 c, Vector3 radii, Material mat, Quaternion? rot = null)
         {
-            var go = Part(parent, name, MeshFactory.UnitSphere(), mat);
+            var go = Part(parent, name, MeshFactory.Ellipsoid(radii), mat);
             go.transform.position = c;
             go.transform.rotation = rot ?? Quaternion.identity;
-            go.transform.localScale = radii;
+            go.transform.localScale = Vector3.one;
             return go;
         }
 
@@ -96,7 +101,7 @@ namespace MuscleAR
             Color c = MuscleRed * (0.88f + 0.22f * v);
             c.r = Mathf.Min(1f, c.r * (1.0f + 0.1f * (1f - v)));
             c.a = 1f;
-            m = Mats.Make(c, 0.42f, 0f, Mats.FiberTexture());
+            m = Mats.Make(c, 0.35f, 0f, Mats.FiberTexture());
             m.name = "M_" + id;
             body.RegisterMaterial(id, m);
             return m;
@@ -154,9 +159,12 @@ namespace MuscleAR
             Mesh mesh = MeshFactory.Sweep(pts, ups, rx, ry, 18, 7f, 1f);
             mesh.name = id + (side > 0 ? "_L" : "_R");
             var go = Part(an.muscle, mesh.name, mesh, MuscleMat(id));
-            var col = go.AddComponent<MeshCollider>(); col.sharedMesh = mesh;
-            var h = go.AddComponent<MuscleHandle>(); h.id = id; h.side = side;
-            body.RegisterHandle(h);
+            if (MuscleDB.IsTarget(id))
+            {
+                var col = go.AddComponent<MeshCollider>(); col.sharedMesh = mesh;
+                var h = go.AddComponent<MuscleHandle>(); h.id = id; h.side = side;
+                body.RegisterHandle(h);
+            }
 
             if (tendA > 0.001f)
             {
@@ -225,18 +233,18 @@ namespace MuscleAR
             organRoot = body.organRoot = NewRoot(rootGO.transform, "Layer_Organs");
             faceRoot = body.faceRoot = NewRoot(rootGO.transform, "Face");
 
-            baseMat = Mats.Make(new Color(0.34f, 0.075f, 0.075f), 0.28f, 0f, Mats.FiberTexture());
-            tendonMat = Mats.Make(new Color(0.93f, 0.89f, 0.80f), 0.5f);
+            baseMat = Mats.Make(new Color(0.42f, 0.12f, 0.12f), 0.28f, 0f, Mats.FiberTexture());
+            tendonMat = Mats.Make(new Color(0.95f, 0.93f, 0.88f), 0.45f);
             tendonMat.EnableKeyword("_EMISSION"); tendonMat.SetColor("_EmissionColor", Color.black);
-            boneMat = Mats.Make(new Color(0.90f, 0.86f, 0.76f), 0.32f, 0f, Mats.NoiseTexture());
-            skinMat = Mats.Make(new Color(0.80f, 0.60f, 0.50f), 0.35f, 0f, Mats.NoiseTexture());
-            skinGhost = Mats.Make(new Color(0.45f, 0.65f, 1f, 0.10f), 0.8f);
+            boneMat = Mats.Make(new Color(0.92f, 0.89f, 0.80f), 0.32f, 0f, Mats.NoiseTexture());
+            skinMat = Mats.Make(new Color(0.86f, 0.70f, 0.60f), 0.35f, 0f, Mats.NoiseTexture());
+            skinGhost = Mats.Make(new Color(0.35f, 0.65f, 0.95f, 0.14f), 0.8f);
             Mats.SetFade(skinGhost);
             darkMat = Mats.Make(new Color(0.06f, 0.03f, 0.03f), 0.1f);
             whiteMat = Mats.Make(new Color(0.96f, 0.95f, 0.92f), 0.7f);
-            heartMat = Mats.Make(new Color(0.55f, 0.07f, 0.10f), 0.55f);
-            lungMat = Mats.Make(new Color(0.80f, 0.55f, 0.56f), 0.3f);
-            handMat = Mats.Make(new Color(0.58f, 0.14f, 0.12f), 0.35f, 0f, Mats.FiberTexture());
+            heartMat = Mats.Make(new Color(0.65f, 0.10f, 0.12f), 0.55f);
+            lungMat = Mats.Make(new Color(0.85f, 0.60f, 0.62f), 0.3f);
+            handMat = Mats.Make(new Color(0.68f, 0.18f, 0.16f), 0.35f, 0f, Mats.FiberTexture());
             body.tendonMat = tendonMat; body.skinMat = skinMat; body.skinGhostMat = skinGhost; body.baseMat = baseMat;
 
             stat = new Anchor { muscle = muscleRoot, tendon = tendonRoot, skin = skinRoot, bone = boneRoot };
@@ -329,9 +337,7 @@ namespace MuscleAR
                 ring.Add(P3(s * 0.031f + Mathf.Cos(a) * 0.021f, 1.657f + Mathf.Sin(a) * 0.015f, 0.0915f));
             }
             var ringMesh = MeshFactory.Tube(ring, 0.0055f, 0.0055f, 30, 8, Vector3.forward);
-            var rg = Part(muscleRoot, "OrbicularisOculi" + s, ringMesh, MuscleMat(MuscleId.OrbicularisOculi));
-            var rcol = rg.AddComponent<MeshCollider>(); rcol.sharedMesh = ringMesh;
-            var rh = rg.AddComponent<MuscleHandle>(); rh.id = MuscleId.OrbicularisOculi; rh.side = s; body.RegisterHandle(rh);
+            Part(muscleRoot, "OrbicularisOculi" + s, ringMesh, MuscleMat(MuscleId.OrbicularisOculi));
 
             if (s > 0)
             {
@@ -342,9 +348,7 @@ namespace MuscleAR
                     mouth.Add(P3(Mathf.Cos(a) * 0.022f, 1.602f + Mathf.Sin(a) * 0.007f, 0.0905f));
                 }
                 var mmesh = MeshFactory.Tube(mouth, 0.0045f, 0.0045f, 34, 8, Vector3.forward);
-                var mg = Part(muscleRoot, "OrbicularisOris", mmesh, MuscleMat(MuscleId.OrbicularisOris));
-                var mc = mg.AddComponent<MeshCollider>(); mc.sharedMesh = mmesh;
-                var mh = mg.AddComponent<MuscleHandle>(); mh.id = MuscleId.OrbicularisOris; mh.side = 0; body.RegisterHandle(mh);
+                Part(muscleRoot, "OrbicularisOris", mmesh, MuscleMat(MuscleId.OrbicularisOris));
 
                 var f = new PB().R(P3(-0.05f, 1.718f, 0.062f), P3(0, 0.4f, 1)).R(P3(0f, 1.728f, 0.07f), P3(0, 0.4f, 1)).R(P3(0.05f, 1.718f, 0.062f), P3(0, 0.4f, 1));
                 M(MuscleId.Frontalis, 0, mm, f, 0.022f, 0.007f, 0.5f, 0f, 0f, 0.5f);
@@ -431,6 +435,10 @@ namespace MuscleAR
 
         void BuildArm(int s)
         {
+            // Membership is recorded during construction, never guessed from vertex coordinates.
+            var layers = new[] { muscleRoot, tendonRoot, skinRoot, boneRoot };
+            var existing = new HashSet<Transform>();
+            foreach (var layer in layers) foreach (Transform child in layer) existing.Add(child);
             Vector3 SH = P3(s * 0.19f, 1.43f, 0f);
             Limb U = ArmLimb(s);
             Vector3 EL = U.c[U.c.Length - 1];
@@ -457,7 +465,7 @@ namespace MuscleAR
             {
                 var capPos = SH + P3(s * 0.016f, -0.004f, 0);
                 var cap = Ball(muscleRoot, "DeltoidCap" + tag, capPos, P3(0.047f, 0.052f, 0.048f), MuscleMat(MuscleId.Deltoid), Quaternion.Euler(0, 0, -s * 20f));
-                var mc = cap.AddComponent<SphereCollider>(); mc.radius = 1f;
+                var mc = cap.AddComponent<SphereCollider>(); mc.radius = 0.05f;
                 var hh = cap.AddComponent<MuscleHandle>(); hh.id = MuscleId.Deltoid; hh.side = s; body.RegisterHandle(hh);
                 Vector3[] org = { SH + P3(s * -0.045f, 0.035f, 0.045f), SH + P3(s * 0.015f, 0.05f, 0.0f), SH + P3(s * -0.03f, 0.04f, -0.05f) };
                 float[] ang = { 0, 90, 180 };
@@ -480,6 +488,14 @@ namespace MuscleAR
                 M(MuscleId.BicepsBrachii, s, ua, sh2, 0.020f, 0.017f, 0.50f, 0.14f, 0.17f, 0.65f);
                 var bt = V(U.Pt(0.98f, 0, 0.9f), F.Pt(0.06f, -6, 0.8f), F.Pt(0.14f, -14, 0.55f));
                 TendonTube(fa, "BicepsTendon" + tag, bt, 0.0048f, 0.0035f);
+
+                var bicGo = new GameObject("BicepsHitBox" + tag);
+                bicGo.transform.SetParent(ua.muscle, false);
+                bicGo.transform.position = Vector3.Lerp(U.Pt(0.20f, 0, 1.05f), U.Pt(0.70f, 0, 1.05f), 0.5f);
+                var bc = bicGo.AddComponent<CapsuleCollider>();
+                bc.radius = 0.034f; bc.height = 0.16f; bc.direction = 1;
+                var bh = bicGo.AddComponent<MuscleHandle>(); bh.id = MuscleId.BicepsBrachii; bh.side = s;
+                body.RegisterHandle(bh);
 
                 var br = new PB().L(U, 0.38f, 30, 0.95f).L(U, 0.66f, 24, 1.02f).L(U, 0.97f, 8, 0.9f);
                 M(MuscleId.Brachialis, s, ua, br, 0.019f, 0.014f, 0.55f, 0.15f, 0.12f, 0.7f);
@@ -560,6 +576,15 @@ namespace MuscleAR
             }
 
             // anchors for labels
+            foreach (var layer in layers)
+            {
+                var members = new List<Transform>();
+                foreach (Transform child in layer) if (!existing.Contains(child)) members.Add(child);
+                var shoulder = NewRoot(layer, "ShoulderAssembly_" + tag);
+                shoulder.position = SH;
+                foreach (var member in members) member.SetParent(shoulder, true);
+                body.RegisterShoulderAssembly(shoulder, s);
+            }
             AnchorAt("humerus_" + tag, SH + dU * 0.16f);
             AnchorAt("scapula_" + tag, P3(s * 0.12f, 1.38f, -0.085f));
             AnchorAt("clavicle_" + tag, P3(s * 0.10f, 1.47f, 0.06f));
@@ -587,11 +612,11 @@ namespace MuscleAR
             // thigh
             Vector3 aiis = P3(s * 0.095f, 0.985f, 0.095f), asis = P3(s * 0.135f, 1.0f, 0.085f);
             var rf = new PB().R(aiis, P3(0, 0.3f, 1)).L(T, 0.10f, 0, 0.98f).L(T, 0.45f, 0, 1.06f).L(T, 0.82f, 0, 0.96f).L(T, 1.0f, 0, 0.90f);
-            M(MuscleId.RectusFemoris, s, an, rf, 0.030f, 0.024f, 0.45f, 0.10f, 0.22f, 0.65f);
+            M(MuscleId.QuadricepsFemoris, s, an, rf, 0.030f, 0.024f, 0.45f, 0.10f, 0.22f, 0.65f);
             var vl = new PB().L(T, 0.12f, 62, 1.0f).L(T, 0.40f, 56, 1.06f).L(T, 0.72f, 48, 1.0f).L(T, 0.98f, 30, 0.92f);
-            M(MuscleId.VastusLateralis, s, an, vl, 0.034f, 0.024f, 0.42f, 0.08f, 0.15f, 0.6f);
+            M(MuscleId.QuadricepsFemoris, s, an, vl, 0.034f, 0.024f, 0.42f, 0.08f, 0.15f, 0.6f);
             var vm = new PB().L(T, 0.35f, -52, 1.0f).L(T, 0.68f, -44, 1.08f).L(T, 0.95f, -22, 0.98f);
-            M(MuscleId.VastusMedialis, s, an, vm, 0.030f, 0.022f, 0.68f, 0.05f, 0.12f, 0.6f);
+            M(MuscleId.QuadricepsFemoris, s, an, vm, 0.030f, 0.022f, 0.68f, 0.05f, 0.12f, 0.6f);
             var sar = new PB().R(asis, P3(s * 0.4f, 0.2f, 1)).L(T, 0.18f, -10, 1.0f).L(T, 0.48f, -42, 1.0f).L(T, 0.8f, -80, 0.97f).L(S, 0.12f, -88, 0.97f);
             M(MuscleId.Sartorius, s, an, sar, 0.012f, 0.008f, 0.5f, 0.05f, 0.1f, 0.7f);
             var add = new PB().R(P3(s * 0.030f, 0.86f, 0.04f), P3(-s * 0.5f, 0, 1)).L(T, 0.35f, -86, 0.96f).L(T, 0.75f, -94, 0.92f);

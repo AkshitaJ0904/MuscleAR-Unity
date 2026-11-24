@@ -21,7 +21,7 @@ namespace MuscleAR
         readonly List<Transform> points = new List<Transform>();
         float duration = 3.0f;
 
-        static Texture2D GridTexture()
+        public static Texture2D GridTexture()
         {
             int s = 128;
             var t = new Texture2D(s, s, TextureFormat.RGBA32, true);
@@ -119,6 +119,15 @@ namespace MuscleAR
 
         /// <summary>Keep the detected-plane overlay visible (used when returning to the scan screen).</summary>
         public void Reset() { Detected = false; Progress = 0f; Scanning = false; }
+
+        public void MarkDetected()
+        {
+            Scanning = false;
+            Detected = true;
+            Progress = 1f;
+            if (outline != null) outline.enabled = true;
+            if (OnDetected != null) OnDetected();
+        }
 
         void Update()
         {

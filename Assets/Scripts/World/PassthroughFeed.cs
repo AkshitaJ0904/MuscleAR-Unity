@@ -15,6 +15,9 @@ namespace MuscleAR
         RawImage img;
         RectTransform imgRt;
         Canvas canvas;
+#if UNITY_ANDROID && !UNITY_EDITOR
+        bool requestingPermission;
+#endif
 
         public static PassthroughFeed Create(Transform parent, Camera bgCam)
         {
@@ -40,6 +43,28 @@ namespace MuscleAR
         public bool TryStart()
         {
             if (Active) return true;
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            if (!UnityEngine.Android.Permission.HasUserAuthorizedPermission(UnityEngine.Android.Permission.Camera))
+            {
+                if (requestingPermission)
+                {
+                    Status = "Camera permission request already in progress";
+                    return false;
+                }
+
+                requestingPermission = true;
+                Status = "Requesting camera permission...";
+
+                var callbacks = new UnityEngine.Android.PermissionCallbacks();
+                callbacks.PermissionGranted += OnPermissionGranted;
+                callbacks.PermissionDenied += OnPermissionDenied;
+
+                UnityEngine.Android.Permission.RequestUserPermission(UnityEngine.Android.Permission.Camera, callbacks);
+                return false;
+            }
+#endif
+
             var devs = WebCamTexture.devices;
             if (devs.Length == 0) { Status = "No camera found – using virtual lab"; return false; }
             string name = devs[0].name;
@@ -52,8 +77,34 @@ namespace MuscleAR
             return true;
         }
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+        void OnPermissionGranted(string permissionName)
+        {
+            requestingPermission = false;
+            Status = "Camera permission granted";
+            // Resume the camera startup safely; never call ToggleFeed() to avoid toggle-inversion
+            if (!Active && TryStart())
+            {
+                if (AppFlow.I != null)
+                {
+                    AppFlow.I.rig.SetPassthrough(true);
+                    AppFlow.I.lab.SetVisible(false);
+                }
+            }
+        }
+
+        void OnPermissionDenied(string permissionName)
+        {
+            requestingPermission = false;
+            Status = "Camera permission denied – using virtual lab";
+        }
+#endif
+
         public void Stop()
         {
+#if UNITY_ANDROID && !UNITY_EDITOR
+            requestingPermission = false;
+#endif
             if (tex != null) { tex.Stop(); Destroy(tex); tex = null; }
             img.gameObject.SetActive(false);
             Active = false;

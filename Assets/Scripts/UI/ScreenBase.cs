@@ -22,7 +22,14 @@ namespace MuscleAR
         }
 
         public abstract void Build();
-        public virtual void Enter() { T = 0f; }
+        public virtual void Enter()
+        {
+            T = 0f;
+            if (MuscleAudioController.Instance != null)
+            {
+                MuscleAudioController.Instance.ScanAndBindButtons();
+            }
+        }
         public virtual void Exit() { }
         public virtual void Tick() { T += Time.deltaTime; }
         public virtual void OnTap(Vector2 screenPos) { }
@@ -59,9 +66,10 @@ namespace MuscleAR
         { UIKit.At(rt, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(x, y), new Vector2(w, h)); }
 
         protected float Top { get { return f.topInset; } }
+        protected float Bottom { get { return f.bottomInset; } }
 
         // ---------------- chrome ----------------
-        protected Image TopShade(float h = 320f, float a = 0.78f)
+        protected Image TopShade(float h = 260f, float a = 0.50f)
         {
             var im = UIKit.Img(root, UIKit.GradUp, new Color(0.02f, 0.03f, 0.05f, a), "TopShade");
             UIKit.At(im.rectTransform, new Vector2(0.5f, 1), new Vector2(0.5f, 1), Vector2.zero, new Vector2(0, h));
@@ -70,7 +78,7 @@ namespace MuscleAR
             return im;
         }
 
-        protected Image BottomShade(float h = 380f, float a = 0.88f)
+        protected Image BottomShade(float h = 320f, float a = 0.60f)
         {
             var im = UIKit.Img(root, UIKit.GradDown, new Color(0.02f, 0.03f, 0.05f, a), "BottomShade");
             im.rectTransform.anchorMin = new Vector2(0, 0); im.rectTransform.anchorMax = new Vector2(1, 0);
@@ -86,74 +94,124 @@ namespace MuscleAR
             return im;
         }
 
-        /// <summary>Logo (top-left) + outlined pill (top-right). Optionally a compass left of the logo.</summary>
-        protected Text TopRow(string pill, bool compass = false)
+        // Stored layout references for responsive safe area updates
+        protected RectTransform backBtnRt;
+        protected RectTransform logoRt;
+        protected RectTransform pillRt;
+        protected RectTransform headlineRt;
+        protected float headlineBaseY;
+        protected float headlineYOffset;
+        protected float headlineHeight;
+        protected RectTransform subheadRt;
+        protected float subheadBaseY;
+        protected float subheadYOffset;
+
+        /// <summary>Logo (top-left) + mode bar / pill (top-right). Back button on left when enabled.</summary>
+        protected Text TopRow(string pill, bool compass = false, bool back = false)
         {
-            float x = 20f;
-            if (compass) { Compass(root, 20, Top + 38); x = 72f; }
-            var logo = UIKit.Logo(root, 19);
+            float x = 16f;
+            if (back)
+            {
+                var bb = UIKit.Img(root, UIKit.Round, new Color(0.10f, 0.16f, 0.28f, 0.95f), "BackButton", true, true);
+                var ring = UIKit.Img(bb.transform, UIKit.Ring, UIKit.BorderSubtle, "Border", true);
+                UIKit.Fill(ring.rectTransform);
+                TL(bb.rectTransform, 16, Top + 6, 36, 32);
+                var btn = bb.gameObject.AddComponent<Button>();
+                btn.targetGraphic = bb;
+                btn.transition = Selectable.Transition.None;
+                btn.onClick.AddListener(() => f.Back());
+                MuscleAudioController.AttachClickSound(btn);
+                var arr = UIKit.Label(bb.transform, "←", 16, FontStyle.Bold, Color.white, TextAnchor.MiddleCenter, "Arr");
+                UIKit.Fill(arr.rectTransform);
+                backBtnRt = bb.rectTransform;
+                x = 60f;
+            }
+            else if (compass) { Compass(root, 16, Top + 6); x = 68f; }
+
+            var logo = UIKit.Logo(root, 18);
             logo.anchorMin = logo.anchorMax = new Vector2(0, 1); logo.pivot = new Vector2(0, 0.5f);
-            logo.anchoredPosition = new Vector2(x, -(Top + 58)); logo.sizeDelta = new Vector2(140, 28);
-            var p = UIKit.Pill(root, pill, 12);
-            p.anchorMin = p.anchorMax = new Vector2(1, 1); p.pivot = new Vector2(1, 0.5f);
-            p.anchoredPosition = new Vector2(-20, -(Top + 58));
-            return p.GetComponentInChildren<Text>();
+            logo.anchoredPosition = new Vector2(x, -(Top + 22)); logo.sizeDelta = new Vector2(110, 28);
+            logoRt = logo;
+
+            // On entry screens (< 4), display mode tag pill in top-right
+            if (number < 4)
+            {
+                var p = UIKit.Pill(root, pill, 11);
+                p.anchorMin = p.anchorMax = new Vector2(1, 1); p.pivot = new Vector2(1, 0.5f);
+                p.anchoredPosition = new Vector2(-16, -(Top + 22));
+                pillRt = p;
+                return p.GetComponentInChildren<Text>();
+            }
+            return null;
         }
 
         protected void Compass(Transform parent, float x, float y)
         {
             var c = UIKit.Img(parent, UIKit.CircleRing, new Color(1, 1, 1, 0.35f), "Compass");
-            TL(c.rectTransform, x, y, 44, 44);
+            TL(c.rectTransform, x, y, 36, 36);
             var n = UIKit.Label(c.transform, "N", 8, FontStyle.Bold, new Color(1, 1, 1, 0.75f), TextAnchor.UpperCenter, "N");
-            UIKit.Fill(n.rectTransform); n.rectTransform.offsetMax = new Vector2(0, -3);
+            UIKit.Fill(n.rectTransform); n.rectTransform.offsetMax = new Vector2(0, -2);
             var s = UIKit.Label(c.transform, "S", 8, FontStyle.Bold, new Color(1, 1, 1, 0.75f), TextAnchor.LowerCenter, "S");
-            UIKit.Fill(s.rectTransform); s.rectTransform.offsetMin = new Vector2(0, 3);
+            UIKit.Fill(s.rectTransform); s.rectTransform.offsetMin = new Vector2(0, 2);
             var needle = UIKit.Img(c.transform, UIKit.INeedle, new Color(1, 1, 1, 0.9f), "Needle");
-            Mid(needle.rectTransform, 0, 0, 7, 26);
+            Mid(needle.rectTransform, 0, 0, 6, 22);
         }
 
-        protected Text Headline(string text, int size = 34, float y = 0f)
+        protected Text Headline(string text, int size = 26, float y = 0f)
         {
             var t = UIKit.Label(root, text, size, FontStyle.Bold, Color.white, TextAnchor.UpperLeft, "Headline");
-            TL(t.rectTransform, 20, Top + 92 + y, 350, size * 2.6f);
+            headlineRt = t.rectTransform;
+            headlineBaseY = number >= 4 ? 90f : 58f;
+            headlineYOffset = y;
+            headlineHeight = Mathf.Max(34f, size * 1.35f);
+            TL(t.rectTransform, 10, Top + headlineBaseY + y, 340, headlineHeight);
             UIKit.Shadowed(t);
             return t;
         }
 
-        protected Text Subhead(string text, float y, int size = 16)
+        protected Text Subhead(string text, float y = 0f, int size = 13)
         {
-            var t = UIKit.Label(root, text, size, FontStyle.Normal, new Color(1, 1, 1, 0.9f), TextAnchor.UpperLeft, "Subhead");
-            TL(t.rectTransform, 20, Top + y, 320, 60);
+            var t = UIKit.Label(root, text, size, FontStyle.Normal, UIKit.Dim, TextAnchor.UpperLeft, "Subhead");
+            t.lineSpacing = 1.25f;
+            subheadRt = t.rectTransform;
+            subheadBaseY = number >= 4 ? 128f : 98f;
+            subheadYOffset = y;
+            TL(t.rectTransform, 10, Top + subheadBaseY + y, 340, 42);
             UIKit.Shadowed(t);
             return t;
         }
 
-        /// <summary>"ANATOMY VIEWER v2.3 / FULL MUSCULOSKELETAL SYSTEM" top-centre caption.</summary>
+        /// <summary>Updates anchored positions of header and title elements when safe area insets change.</summary>
+        public virtual void UpdateSafeAreaLayout()
+        {
+            if (backBtnRt != null) TL(backBtnRt, 16, Top + 6, 36, 32);
+            if (logoRt != null) logoRt.anchoredPosition = new Vector2(backBtnRt != null ? 60f : 16f, -(Top + 22));
+            if (pillRt != null) pillRt.anchoredPosition = new Vector2(-16, -(Top + 22));
+            if (headlineRt != null) TL(headlineRt, 10, Top + headlineBaseY + headlineYOffset, 340, headlineHeight);
+            if (subheadRt != null) TL(subheadRt, 10, Top + subheadBaseY + subheadYOffset, 340, 42);
+        }
+
+        /// <summary>Top-centre caption (omitted on interactive screens to keep header uncluttered).</summary>
         protected void ViewerCaption()
         {
-            var a = UIKit.Label(root, "ANATOMY VIEWER v2.3", 12, FontStyle.Bold, new Color(1, 1, 1, 0.78f), TextAnchor.MiddleCenter, "ViewerTitle");
-            TC(a.rectTransform, Top + 44, 200, 16);
-            var b = UIKit.Label(root, "FULL MUSCULOSKELETAL SYSTEM", 7, FontStyle.Normal, new Color(1, 1, 1, 0.55f), TextAnchor.MiddleCenter, "ViewerSub");
-            TC(b.rectTransform, Top + 60, 200, 10);
         }
 
-        protected Button BottomButton(string text, Sprite icon, Action onClick, float y = 34f)
+        protected Button BottomButton(string text, Sprite icon, Action onClick, float y = 24f)
         {
-            var b = UIKit.PrimaryButton(root, text, icon, onClick);
-            BC(b.GetComponent<RectTransform>(), y, 342, 56);
+            var b = UIKit.PrimaryButton(root, text, icon, onClick, 342, 52);
+            BC(b.GetComponent<RectTransform>(), y + Bottom, 342, 52);
             return b;
         }
 
-        protected Button BottomButton(string text, bool arrow, Action onClick, float y = 34f)
+        protected Button BottomButton(string text, bool arrow, Action onClick, float y = 24f)
         {
             return BottomButton(text, arrow ? UIKit.IArrow : null, onClick, y);
         }
 
         protected Button Fab(float y = 110f)
         {
-            var b = UIKit.NextArrow(root, () => f.Next(), 50);
-            BR(b.GetComponent<RectTransform>(), 24, y, 50, 50);
-            return b;
+            // Redundant floating arrow removed to avoid duplicate arrow icons next to action buttons
+            return null;
         }
 
         /// <summary>Rounded translucent pill-shaped bottom label (e.g. "Drag to move").</summary>
@@ -175,14 +233,25 @@ namespace MuscleAR
 
         protected void SetupModel(ModelController.Mode mode, bool show = true, bool pop = false)
         {
-            f.model.Show(show, pop);
-            f.model.mode = mode;
+            if (f.model != null)
+            {
+                f.model.Show(show, pop);
+                f.model.mode = mode;
+            }
         }
 
         protected static Vector2 ToPhone(Vector3 viewport, AppFlow f)
         {
             Rect p = f.rig.phone;
             return new Vector2((viewport.x - p.x) / p.width * AppFlow.W, (viewport.y - p.y) / p.height * AppFlow.H);
+        }
+
+        /// <summary>
+        /// Handled centrally by AppFlow.ModeSwitcherBar in the persistent AR/Environment header.
+        /// </summary>
+        protected Button AddResetRescanButton(float yOffset = 0f)
+        {
+            return null;
         }
     }
 }
