@@ -1,11 +1,35 @@
-[Ll]ibrary/
-[Tt]emp/
-[Oo]bj/
-[Bb]uild/
-[Ll]ogs/
-[Uu]serSettings/
+# Unity-generated project data and local builds
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Ss]hots/
+sysinfo.txt
+
+# Generated IDE files and local editor settings
+/.vs/
+/.vscode/
+/.idea/
 *.csproj
 *.sln
-.vscode/
+*.slnx
+*.user
+*.suo
+
+# Local environment and signing files
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pfx
+
+# OS metadata
 .DS_Store
-Shots/
+Thumbs.db
