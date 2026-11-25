@@ -178,14 +178,24 @@ namespace MuscleAR.EditorTools
 {
     public static class UITests
     {
+        const string TriggerFlag = "Temp/trigger_ui_tests.flag";
+
+        // Runs only when a trigger file exists (same pattern as BuildScript / TestRunnerStandalone).
+        // It used to run on every script reload and on entering Play mode; the throwaway AppFlow it
+        // creates disables every Camera and EventSystem in the scene, which broke the UI in Play mode.
         [InitializeOnLoadMethod]
-        static void AutoRunOnReload()
+        static void HookTrigger()
         {
-            // Auto-trigger test runner on reload
-            EditorApplication.delayCall += () =>
-            {
-                RunTests();
-            };
+            EditorApplication.update -= CheckTrigger;
+            EditorApplication.update += CheckTrigger;
+        }
+
+        static void CheckTrigger()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+            if (!System.IO.File.Exists(TriggerFlag)) return;
+            try { System.IO.File.Delete(TriggerFlag); } catch { }
+            RunTests();
         }
 
         [MenuItem("MuscleAR/Run UI Polish & Layout Tests")]
